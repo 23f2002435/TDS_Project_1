@@ -726,3 +726,44 @@ async def health_check():
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True) 
+
+
+# Add this to the end of your existing app.py file
+
+# Define the required API endpoint for the project
+@app.post("/api/")
+async def api_endpoint(request_data: dict = Body(...)):
+    """
+    Main API endpoint as required by the project specification
+    """
+    try:
+        # Convert the raw dict to our QueryRequest model
+        query_request = QueryRequest(
+            question=request_data.get("question", ""),
+            image=request_data.get("image")
+        )
+        
+        # Use the existing query logic
+        result = await query_knowledge_base(query_request)
+        
+        # Ensure we return the exact format required
+        if isinstance(result, JSONResponse):
+            # If there was an error, extract the content
+            return result
+        
+        # Return in the exact format specified in the project
+        return {
+            "answer": result["answer"],
+            "links": result["links"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in API endpoint: {e}")
+        logger.error(traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+# For Vercel - this is crucial
+handler = app
